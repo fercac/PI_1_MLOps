@@ -74,21 +74,25 @@ def get_director( nombre_director ):
 
 @app.get("/recomendacion/{titulo}")
 def recomendacion(titulo):
-    """Ingresas un nombre de pelicula y te recomnienda las similares en una lista"""
-    i = pd.read_csv("Dataset_generados/titulos.csv")
+    """Ingresa un nombre de película y te recomienda películas similares en una lista"""
+    i = pd.read_csv("Dataset_generados/titulos.csv", encoding="utf-8")
+    #with open("Dataset_generados/titulos.csv", encoding="utf-8") as file:
+    #    i = pd.read_csv(file) #, usecols=['title', 'overview']
+
     tfidf = TfidfVectorizer(stop_words="english")
     i["overview"] = i["overview"].fillna("")
 
-    tfidf_matriz = tfidf.fit_transform(i["overview"])
-    coseno_sim = linear_kernel(tfidf_matriz, tfidf_matriz)
+    tfidf.fit(i["overview"])
+    titulo_idx = i[i["title"] == titulo].index[0]
+    tfidf_matriz = tfidf.transform([i["overview"][titulo_idx]])
 
-    indices = pd.Series(i.index, index=i["title"]).drop_duplicates()
-    idx = indices[titulo]
-    simil = list(enumerate(coseno_sim[idx]))
+    coseno_sim = linear_kernel(tfidf_matriz, tfidf.transform(i["overview"]))
+
+    simil = list(enumerate(coseno_sim[0]))
     simil = sorted(simil, key=lambda x: x[1], reverse=True)
     simil = simil[1:11]
     movie_index = [i[0] for i in simil]
 
-    lista = i["title"].iloc[movie_index].to_list()[:5]
-    
+    lista = i["title"].iloc[movie_index].tolist()[:5]
+
     return f"Lista recomendada: {lista}"
